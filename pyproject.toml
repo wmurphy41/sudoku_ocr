@@ -11,6 +11,7 @@ requires-python = ">=3.8"
 dependencies = [
     "opencv-python",
     "numpy",
+    "pytesseract",
 ]
 authors = [
     {name = "William Murphy", email = "william@example.com"},

@@ -14,7 +14,7 @@ import numpy as np
 from .preprocess import to_binary, largest_contour
 from .grid import find_and_warp, approx_to_quad, order_corners, warp_to_square, create_quad_overlay, GridNotFoundError
 from .cells import split_into_cells
-from .ocr import get_model, ocr_cells, to_grid, print_grid
+from .ocr import ocr_cells, to_grid, print_grid
 
 
 def main():
@@ -102,9 +102,10 @@ Examples:
     
     
     parser.add_argument(
-        "--gpu",
-        action="store_true",
-        help="Use GPU acceleration for OCR (requires CUDA)"
+        "--tesseract-conf",
+        type=float,
+        default=0.45,
+        help="Tesseract confidence threshold for digit recognition (default: 0.45)"
     )
     
     args = parser.parse_args()
@@ -213,24 +214,28 @@ Examples:
         if args.ocr:
             print("Stage 3: OCR digit recognition...")
             try:
-                # Get CNN model
-                model = get_model(gpu=args.gpu)
-                print(f"[OK] CNN model initialized (GPU: {args.gpu})")
+                # Test Tesseract installation
+                from .ocr import test_tesseract_installation, get_tesseract_version
+                print(f"[INFO] {get_tesseract_version()}")
+                
+                if not test_tesseract_installation():
+                    print("Warning: Tesseract installation test failed. OCR may not work properly.")
+                
+                print(f"[OK] Tesseract OCR initialized")
                 
                 # Perform OCR on all cells or just first cell in debug mode
                 if args.debug_first_cell:
                     print("Debug mode: Processing only first cell...")
-                    from .ocr import ocr_cell
+                    from .ocr import ocr_cell, preprocess_cell
                     first_cell = cells[0]
                     print(f"First cell shape: {first_cell.shape}")
                     
                     # Preprocess and show details
-                    from .ocr import preprocess_cell
                     processed = preprocess_cell(first_cell)
                     print(f"Processed cell shape: {processed.shape}")
                     
                     # Run OCR on first cell
-                    digit = ocr_cell(first_cell, model, conf_thresh=args.ocr_conf)
+                    digit = ocr_cell(first_cell, conf_thresh=args.tesseract_conf)
                     print(f"First cell result: {digit}")
                     
                     # Save debug images
@@ -243,7 +248,8 @@ Examples:
                     return
                 else:
                     print("Recognizing digits...")
-                    digits = ocr_cells(cells, model, conf_thresh=args.ocr_conf)
+                    from .ocr import ocr_cells
+                    digits = ocr_cells(cells, conf_thresh=args.tesseract_conf)
                     print(f"[OK] Recognized digits in {len(digits)} cells")
                 
                 # Convert to 9x9 grid
@@ -271,7 +277,7 @@ Examples:
                 
             except ImportError as e:
                 print(f"Error: {e}", file=sys.stderr)
-                print("CNN model dependencies not available", file=sys.stderr)
+                print("Tesseract dependencies not available. Please install pytesseract.", file=sys.stderr)
                 sys.exit(3)
             except Exception as e:
                 print(f"Error during OCR: {e}", file=sys.stderr)
