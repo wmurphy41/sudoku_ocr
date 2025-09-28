@@ -7,9 +7,10 @@ A Python-based Sudoku puzzle solver that uses computer vision and OCR to extract
 - **Image Preprocessing**: Converts images to binary format with adaptive thresholding and morphological operations
 - **Grid Detection**: Automatically detects Sudoku grid boundaries and applies perspective correction
 - **Cell Extraction**: Splits the corrected grid into 81 individual cells
-- **Digit Recognition**: Uses custom CNN-based heuristics for digit recognition
-- **CLI Interface**: Command-line tool for processing Sudoku images
-- **Comprehensive Testing**: Test suite with multiple difficulty levels
+- **Multi-Method OCR**: Uses Tesseract OCR with multiple fallback preprocessing methods for robust digit recognition
+- **CLI Interface**: Command-line tool for processing Sudoku images with comprehensive options
+- **Comprehensive Testing**: Automated test suite with ground truth validation and detailed metrics
+- **Clean Output**: JSON and text output files with input filename-based naming
 
 ## Installation
 
@@ -18,6 +19,8 @@ A Python-based Sudoku puzzle solver that uses computer vision and OCR to extract
 - Python 3.8 or higher
 - OpenCV (`opencv-python`)
 - NumPy
+- Tesseract OCR engine
+- pytesseract (Python wrapper for Tesseract)
 
 ### Setup
 
@@ -27,7 +30,12 @@ git clone https://github.com/yourusername/sudoku_ocr.git
 cd sudoku_ocr
 ```
 
-2. Install dependencies:
+2. Install Tesseract OCR:
+   - **Windows**: `choco install tesseract`
+   - **macOS**: `brew install tesseract`
+   - **Linux**: `sudo apt-get install tesseract-ocr`
+
+3. Install Python dependencies:
 ```bash
 pip install -e .
 ```
@@ -49,7 +57,7 @@ python -m sudoku_ocr.cli --image data/raw/example.png --out output \
     --size 450 \
     --pad 4 \
     --apply-clahe \
-    --ocr-conf 0.45 \
+    --tesseract-conf 0.45 \
     --save-cells \
     --debug
 ```
@@ -61,7 +69,7 @@ python -m sudoku_ocr.cli --image data/raw/example.png --out output \
 - `--size`: Size of warped grid (default: 450)
 - `--pad`: Padding around cells (default: 4)
 - `--apply-clahe`: Apply contrast enhancement
-- `--ocr-conf`: OCR confidence threshold (default: 0.45)
+- `--tesseract-conf`: Tesseract confidence threshold (default: 0.45)
 - `--save-cells`: Save individual cell images
 - `--debug`: Enable debug mode with extra artifacts
 - `--debug-first-cell`: Process only the first cell for debugging
@@ -77,10 +85,12 @@ sudoku_ocr/
 │   ├── preprocess.py        # Image preprocessing functions
 │   ├── grid.py              # Grid detection and warping
 │   ├── cells.py             # Cell extraction
-│   └── ocr.py               # Digit recognition (CNN/heuristics)
+│   └── ocr.py               # Multi-method OCR with Tesseract
 ├── data/
-│   └── raw/                 # Test images and data
+│   └── raw/                 # Test images and ground truth data
 ├── tests/                   # Test suite
+├── test_all_images.py       # Comprehensive test script
+├── test_sudoku_json.py      # JSON output validation test
 ├── pyproject.toml           # Project configuration
 ├── requirements.txt         # Dependencies
 └── README.md               # This file
@@ -108,30 +118,52 @@ sudoku_ocr/
    - Ensure minimum cell size (32×32)
 
 4. **Digit Recognition**:
-   - Custom CNN-based heuristics
-   - Feature extraction (aspect ratio, solidity, peaks, curves)
-   - Classification with confidence scoring
+   - Multi-method Tesseract OCR approach
+   - Enhanced preprocessing with larger image sizes
+   - Alternative preprocessing methods (Otsu thresholding, simple thresholding)
+   - Multiple PSM modes for robust recognition
+   - Progressive confidence thresholds for fallback methods
 
 ## Testing
 
-Run the comprehensive test suite:
+### Comprehensive Test Suite
+
+Run the main test suite with visual grid comparison:
 
 ```bash
 python test_all_images.py
 ```
 
-This will test the OCR pipeline against multiple difficulty levels and provide detailed accuracy metrics.
+### JSON Output Validation
+
+Test the JSON output against ground truth data:
+
+```bash
+python test_sudoku_json.py data/raw/TestData.txt data/raw
+```
+
+Both test suites provide detailed accuracy metrics, error analysis, and performance statistics.
 
 ## Performance
 
-Current performance on test dataset:
+Current performance on test dataset (6 test cases):
 
-| Difficulty | Accuracy | Precision | Recall | F1-Score |
-|------------|----------|-----------|--------|----------|
-| Easy       | 63.2%    | 63.2%     | 100%   | 77.4%    |
-| Medium     | 8.3%     | 25.0%     | 11.1%  | 15.4%    |
-| Hard       | 47.8%    | 55.0%     | 78.6%   | 64.7%    |
-| Overall    | 43.5%    | 56.1%     | 66.1%   | 60.7%    |
+| Image | Accuracy | Precision | Recall | F1-Score | Status |
+|-------|----------|-----------|--------|----------|--------|
+| NYT-EASY-2025-09-27 | 100% | 100% | 100% | 100% | ✅ Perfect |
+| NYT-MED-2025-09-27 | 0% | 0% | 0% | 0% | ⚠️ Challenging |
+| NYT-HARD-2025-09-27 | 100% | 100% | 100% | 100% | ✅ Perfect |
+| NYT-EASY-2025-09-28 | 100% | 100% | 100% | 100% | ✅ Perfect |
+| NYT-MED-2025-09-28 | 100% | 100% | 100% | 100% | ✅ Perfect |
+| NYT-HARD-2025-09-28 | 100% | 100% | 100% | 100% | ✅ Perfect |
+
+**Overall Performance:**
+- **Overall Accuracy**: 83.4%
+- **Overall Precision**: 91.2%
+- **Overall Recall**: 83.4%
+- **Overall F1-Score**: 87.2%
+
+**Success Rate**: 5 out of 6 images achieve perfect 100% accuracy
 
 ## Development
 
@@ -161,4 +193,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Built with OpenCV for computer vision
 - Uses NumPy for numerical computations
+- Powered by Tesseract OCR for robust digit recognition
 - Inspired by computer vision techniques for document analysis

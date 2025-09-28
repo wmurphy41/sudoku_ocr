@@ -130,8 +130,11 @@ dmypy.json
 
 # Project-specific
 out/
+output/
+output*/
 models/
 test_results.json
+test_json_results.json
 *.png
 *.jpg
 *.jpeg
@@ -141,6 +144,5 @@ test_results.json
 
 # Temporary files
 debug_*.py
-test_*.py
 analyze_*.py
 validate_*.py

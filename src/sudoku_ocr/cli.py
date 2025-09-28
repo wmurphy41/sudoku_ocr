@@ -116,6 +116,9 @@ Examples:
         print(f"Error: Input file '{input_path}' not found", file=sys.stderr)
         sys.exit(1)
     
+    # Extract filename without extension for output file naming
+    input_filename = input_path.stem
+    
     # Create output directory
     output_dir = Path(args.out)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -151,22 +154,22 @@ Examples:
         # Save required artifacts
         print("Saving artifacts...")
         
-        # 001_binary.png
-        cv2.imwrite(str(output_dir / "001_binary.png"), artifacts['binary'])
-        print(f"  Saved: {output_dir / '001_binary.png'}")
+        # binary.png
+        cv2.imwrite(str(output_dir / f"{input_filename}_binary.png"), artifacts['binary'])
+        print(f"  Saved: {output_dir / f'{input_filename}_binary.png'}")
         
-        # 002_contour_mask.png (white fill of largest contour)
-        cv2.imwrite(str(output_dir / "002_contour_mask.png"), artifacts['contour_mask'])
-        print(f"  Saved: {output_dir / '002_contour_mask.png'}")
+        # contour_mask.png (white fill of largest contour)
+        cv2.imwrite(str(output_dir / f"{input_filename}_contour_mask.png"), artifacts['contour_mask'])
+        print(f"  Saved: {output_dir / f'{input_filename}_contour_mask.png'}")
         
-        # 003_quad_overlay.png (original + quad with circles and lines)
+        # quad_overlay.png (original + quad with circles and lines)
         quad_overlay = create_quad_overlay(image, artifacts['quad'])
-        cv2.imwrite(str(output_dir / "003_quad_overlay.png"), quad_overlay)
-        print(f"  Saved: {output_dir / '003_quad_overlay.png'}")
+        cv2.imwrite(str(output_dir / f"{input_filename}_quad_overlay.png"), quad_overlay)
+        print(f"  Saved: {output_dir / f'{input_filename}_quad_overlay.png'}")
         
-        # 004_warped.png
-        cv2.imwrite(str(output_dir / "004_warped.png"), artifacts['warped'])
-        print(f"  Saved: {output_dir / '004_warped.png'}")
+        # warped.png
+        cv2.imwrite(str(output_dir / f"{input_filename}_warped.png"), artifacts['warped'])
+        print(f"  Saved: {output_dir / f'{input_filename}_warped.png'}")
         
         # Save cells if requested
         if args.save_cells:
@@ -180,7 +183,7 @@ Examples:
                 for i, cell in enumerate(cells):
                     row = i // 9
                     col = i % 9
-                    filename = f"r{row}_c{col}.png"
+                    filename = f"{input_filename}_r{row}_c{col}.png"
                     cv2.imwrite(str(cells_dir / filename), cell)
                 
                 print(f"  Saved 81 cells to: {cells_dir}")
@@ -198,7 +201,7 @@ Examples:
                     for i, cell in enumerate(cells):
                         row = i // 9
                         col = i % 9
-                        filename = f"r{row}_c{col}_bin.png"
+                        filename = f"{input_filename}_r{row}_c{col}_bin.png"
                         
                         # Preprocess the cell for OCR
                         binary_cell = preprocess_cell(cell)
@@ -239,10 +242,10 @@ Examples:
                     print(f"First cell result: {digit}")
                     
                     # Save debug images
-                    cv2.imwrite(str(output_dir / "debug_first_cell_original.png"), first_cell)
-                    cv2.imwrite(str(output_dir / "debug_first_cell_processed.png"), processed)
-                    print(f"  Saved debug images: {output_dir / 'debug_first_cell_original.png'}")
-                    print(f"  Saved debug images: {output_dir / 'debug_first_cell_processed.png'}")
+                    cv2.imwrite(str(output_dir / f"{input_filename}_debug_first_cell_original.png"), first_cell)
+                    cv2.imwrite(str(output_dir / f"{input_filename}_debug_first_cell_processed.png"), processed)
+                    print(f"  Saved debug images: {output_dir / f'{input_filename}_debug_first_cell_original.png'}")
+                    print(f"  Saved debug images: {output_dir / f'{input_filename}_debug_first_cell_processed.png'}")
                     
                     print("[OK] Debug mode completed - processed first cell only")
                     return
@@ -261,13 +264,19 @@ Examples:
                 
                 # Save puzzle as JSON (9x9 list of lists)
                 import json
-                puzzle_json = output_dir / "010_puzzle.json"
+                puzzle_json = output_dir / f"{input_filename}_puzzle.json"
                 with open(puzzle_json, "w") as f:
-                    json.dump(grid, f, indent=2)
+                    f.write("[\n")
+                    for i, row in enumerate(grid):
+                        f.write("  " + json.dumps(row))
+                        if i < len(grid) - 1:
+                            f.write(",")
+                        f.write("\n")
+                    f.write("]")
                 print(f"  Saved: {puzzle_json}")
                 
                 # Save puzzle as flat text (81-char string with zeros for blanks)
-                puzzle_flat = output_dir / "011_puzzle_flat.txt"
+                puzzle_flat = output_dir / f"{input_filename}_puzzle_flat.txt"
                 flat_string = "".join(str(digit) for digit in digits)
                 with open(puzzle_flat, "w") as f:
                     f.write(flat_string)
@@ -288,8 +297,8 @@ Examples:
             print("Saving debug images...")
             
             # Save contour mask
-            cv2.imwrite(str(output_dir / "debug_contour_mask.png"), artifacts['contour_mask'])
-            print(f"  Saved: {output_dir / 'debug_contour_mask.png'}")
+            cv2.imwrite(str(output_dir / f"{input_filename}_debug_contour_mask.png"), artifacts['contour_mask'])
+            print(f"  Saved: {output_dir / f'{input_filename}_debug_contour_mask.png'}")
             
             # Save additional debug info
             debug_info = {
@@ -303,14 +312,14 @@ Examples:
             }
             
             # Save debug info as text
-            with open(output_dir / "debug_info.txt", "w") as f:
+            with open(output_dir / f"{input_filename}_debug_info.txt", "w") as f:
                 f.write("Debug Information\n")
                 f.write("================\n\n")
                 f.write(f"Quad points: {debug_info['quad_points']}\n")
                 f.write(f"Warped size: {debug_info['warped_size']}\n")
                 f.write(f"Binary stats: {debug_info['binary_stats']}\n")
             
-            print(f"  Saved: {output_dir / 'debug_info.txt'}")
+            print(f"  Saved: {output_dir / f'{input_filename}_debug_info.txt'}")
         
         print(f"\n[OK] Processing complete! Check output directory: {output_dir}")
         sys.exit(0)  # Success
